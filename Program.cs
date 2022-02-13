@@ -181,7 +181,7 @@ while (true)
 	}
 }
 
-static bool Unique(string s)
+static bool Unique(string s) // return true if string contains no duplicate characters
 {
 	for (int i = 0; i < s.Length - 1; i++)
 	{
