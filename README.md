@@ -56,6 +56,8 @@ you should enter "YGYWW" (case insensitive, any character other than 'Y' and 'G'
 
 Enter any number of 'g's to go back to the menu.
 
+To change the word list, just replace words.txt with any other similarly formatted word list. WordleHelper works for any number of rounds or letters, and any language's characters.
+
 ## Contribution
 To contribute to TEMPLATE, follow these steps:
 
@@ -66,6 +68,9 @@ To contribute to TEMPLATE, follow these steps:
 5. Create the pull request.
 
 Alternatively see the GitHub documentation on [creating a pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request).
+
+## Credit
+Credit to: https://github.com/charlesreid1/five-letter-words for the default five letter words list.
 
 ## License
 
