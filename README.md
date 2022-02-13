@@ -50,6 +50,7 @@ WordleHelper has four options: (letters), (words), (unique), and (play).
 
 (play) tells you words to enter. After entering a word, enter a string representing what Wordle returned about your guess. For example, if you get the following output:
 
+![image](https://user-images.githubusercontent.com/10767513/153775881-7fb7a0c5-9eb9-483a-be47-13f5788fc775.png)
 
 you should enter "YGYWW" (case insensitive, any character other than 'Y' and 'G' represents a white tile).
 
