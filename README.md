@@ -59,7 +59,7 @@ Enter any number of 'g's to go back to the menu.
 To change the word list, just replace words.txt with any other similarly formatted word list. WordleHelper works for any number of rounds or letters, and any language's characters.
 
 ## Contribution
-To contribute to TEMPLATE, follow these steps:
+To contribute to WordleHelper, follow these steps:
 
 1. Fork this repository.
 2. Create a branch: `git checkout -b <branch_name>`.
