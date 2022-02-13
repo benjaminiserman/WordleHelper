@@ -1,4 +1,4 @@
-# TEMPLATE
+# WordleHelper
 ![Downloads](https://img.shields.io/github/downloads/winggar/WordleHelper/total?style=for-the-badge)
 
 A console app that helps you win Wordle every time.
