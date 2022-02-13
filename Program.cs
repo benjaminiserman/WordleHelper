@@ -1,15 +1,17 @@
-﻿using System.Diagnostics.Metrics;
-using InputHandler;
+﻿using InputHandler;
 
 string[] words = File.ReadAllLines("words.txt");
 Dictionary<string, int> values = words.ToDictionary(x => x, y => 0);
 
-Dictionary<char, int> frequencies = "abcdefghijklmnopqrstuvwxyz".ToDictionary(x => x, y => 0);
+Dictionary<char, int> frequencies = new();
 foreach (string word in words) // get letter frequencies
 {
 	foreach (char c in word)
 	{
-		frequencies[c]++;
+		char lower = char.ToLowerInvariant(c);
+
+		if (frequencies.ContainsKey(lower)) frequencies[lower]++;
+		else frequencies.Add(lower, 1);
 	}
 }
 
@@ -90,6 +92,9 @@ while (true)
 			HashSet<char> usedLetters = new();
 			List<string> goodWords = new();
 
+			Console.WriteLine("How many words would you like?");
+			int num = Input.Get(int.Parse);
+
 			foreach (string s in uniqueWords)
 			{
 				if (s.Any(x => usedLetters.Contains(x))) continue;
@@ -98,11 +103,11 @@ while (true)
 					goodWords.Add(s);
 					foreach (char c in s) usedLetters.Add(c);
 
-					if (goodWords.Count == 5) break;
+					if (goodWords.Count == num) break;
 				}
 			}
 
-			while (goodWords.Count < 5)
+			while (goodWords.Count < num)
 			{
 				string s = uniqueWords.MinBy(s => s.Count(x => usedLetters.Contains(x)));
 
@@ -144,11 +149,11 @@ while (true)
 
 				string s = Console.ReadLine();
 
-				if (s.Any(c => char.ToLower(c) != 'g'))
+				if (s.Any(c => char.ToLowerInvariant(c) != 'g'))
 				{
 					for (int i = 0; i < s.Length; i++)
 					{
-						switch (char.ToLower(s[i]))
+						switch (char.ToLowerInvariant(s[i]))
 						{
 							case 'y':
 							{
