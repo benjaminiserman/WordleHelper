@@ -1,32 +1,15 @@
-﻿using InputHandler;
+﻿using System;
+using System.Collections.Generic;
+using InputHandler;
 
 string[] words = File.ReadAllLines("words.txt");
-Dictionary<string, int> values = words.ToDictionary(x => x, y => 0);
 
-Dictionary<char, int> frequencies = new();
-foreach (string word in words) // get letter frequencies
-{
-	foreach (char c in word)
-	{
-		char lower = char.ToLowerInvariant(c);
-
-		if (frequencies.ContainsKey(lower)) frequencies[lower]++;
-		else frequencies.Add(lower, 1);
-	}
-}
-
-foreach (string word in words) // get word values
-{
-	foreach (char c in word)
-	{
-		values[word] += frequencies[c];
-	}
-}
+var (values, frequencies) = Global.GetValues(words);
 
 var sortedLetters = (from kvp in frequencies orderby kvp.Value select kvp.Key).ToArray();
 var sortedWords = (from kvp in values orderby kvp.Value select kvp.Key).ToArray();
 
-var uniqueWords = (from s in sortedWords where Unique(s) select s).Reverse().ToArray();
+var uniqueWords = (from s in sortedWords where Global.Unique(s) select s).Reverse().ToArray();
 
 while (true)
 {
@@ -124,56 +107,89 @@ while (true)
 		}
 		case Option.Play:
 		{
-			HashSet<string> set = new(words);
+			Player p = new(words);
 
-			for (int r = 0; r < 6; r++)
+			while (true)
 			{
-				string word;
-
-				if (r == 0) word = "arose";
-				else
-				{
-					try
-					{
-						word = set.First(x => Unique(x));
-					}
-					catch
-					{
-						word = null;
-					}
-
-					word ??= set.First();
-				}
-
-				Console.WriteLine(word);
+				Console.WriteLine(p.Guess());
 
 				string s = Console.ReadLine();
+				if (s.Any(x => char.ToLowerInvariant(x) != 'g')) p.Response(s);
+				else break;
+			}
 
-				if (s.Any(c => char.ToLowerInvariant(c) != 'g'))
+			break;
+		}
+		case Option.Test:
+		{
+			var dist = Global.Test(new Player(words), words, 100);
+
+			break;
+		}
+		case Option.TwentyFive:
+		{
+			HashSet<char> usedLetters = new();
+			List<string> bestWords = new();
+			int bestScore = 0;
+			int searched = -1;
+
+			Recurse(usedLetters, bestWords, null);
+
+			void Recurse(HashSet<char> inLetters, List<string> inWords, string chosen)
+			{
+				HashSet<char> usedLetters = new(inLetters);
+				List<string> words = new(inWords);
+
+				searched++;
+				if (searched % 100 == 0) Console.WriteLine($"searched: {searched}... best = {bestScore}/{bestWords.Count}");
+
+				if (chosen is not null)
 				{
-					for (int i = 0; i < s.Length; i++)
+					words.Add(chosen);
+					foreach (char c in chosen) usedLetters.Add(c);
+				}
+
+				if (words.Count < 5)
+				{
+					foreach (string s in uniqueWords)
 					{
-						switch (char.ToLowerInvariant(s[i]))
+						if (s.Any(x => usedLetters.Contains(x))) continue;
+						else
 						{
-							case 'y':
-							{
-								set.RemoveWhere(x => !x.Contains(word[i]) || x[i] == word[i]);
-								break;
-							}
-							case 'g':
-							{
-								set.RemoveWhere(x => x[i] != word[i]);
-								break;
-							}
-							default:
-							{
-								set.RemoveWhere(x => x.Contains(word[i]));
-								break;
-							}
+							Recurse(usedLetters, words, s);
 						}
 					}
 				}
-				else break;
+
+				if (bestWords.Count < words.Count)
+				{
+					bestWords = words;
+					bestScore = words.Select(x => values[x]).Sum();
+
+					Console.WriteLine($"After {searched}, found ({bestScore}):");
+
+					foreach (string word in bestWords)
+					{
+						Console.WriteLine(word);
+					}
+
+				}
+				else if (bestWords.Count == words.Count)
+				{
+					int thisScore = words.Select(x => values[x]).Sum();
+					if (thisScore > bestScore)
+					{
+						bestWords = words;
+						bestScore = thisScore;
+
+						Console.WriteLine($"After {searched}, found ({bestScore}):");
+
+						foreach (string word in bestWords)
+						{
+							Console.WriteLine(word);
+						}
+					}
+				}
 			}
 
 			break;
@@ -181,20 +197,186 @@ while (true)
 	}
 }
 
-static bool Unique(string s) // return true if string contains no duplicate characters
+internal static class Global
 {
-	for (int i = 0; i < s.Length - 1; i++)
+	public static bool Unique(string s) // return true if string contains no duplicate characters
 	{
-		for (int j = i + 1; j < s.Length; j++)
+		for (int i = 0; i < s.Length - 1; i++)
 		{
-			if (s[i] == s[j]) return false;
+			for (int j = i + 1; j < s.Length; j++)
+			{
+				if (s[i] == s[j]) return false;
+			}
+		}
+
+		return true;
+	}
+
+	public static HashSet<string> RestrictSet(HashSet<string> set, string s, string word)
+	{
+		for (int i = 0; i < s.Length; i++)
+		{
+			switch (char.ToLowerInvariant(s[i]))
+			{
+				case 'y':
+				{
+					set.RemoveWhere(x => !x.Contains(word[i]) || x[i] == word[i]);
+					break;
+				}
+				case 'g':
+				{
+					set.RemoveWhere(x => x[i] != word[i]);
+					break;
+				}
+				default:
+				{
+					set.RemoveWhere(x => x.Contains(word[i]));
+					break;
+				}
+			}
+		}
+
+		return set;
+	}
+
+	public static Dictionary<int, int> Test(Player p, string[] words, int interval)
+	{
+		int w = 0;
+		Dictionary<int, int> dist = new int[] { -1, 1, 2, 3, 4, 5, 6 }.ToDictionary(x => x, x => 0);
+		foreach (var s in words)
+		{
+			for (int i = 0; i < 6; i++)
+			{
+				string guess = p.Guess();
+
+				string response = new(guess.Select((c, i) => Match((c, i), s)).ToArray());
+
+				if (response.Any(x => char.ToLowerInvariant(x) != 'g')) p.Response(response);
+				else
+				{
+					dist[i + 1]++;
+					goto Next;
+				}
+			}
+
+			dist[-1]++;
+
+			Next:;
+			p.Clear(words);
+
+			if (++w % interval == 0)
+			{
+				Console.WriteLine($"After {w}:");
+				Log();
+			}
+		}
+
+		Console.WriteLine("Final:");
+		Log();
+
+		return dist;
+
+		char Match((char c, int i) t, string s)
+		{
+			(char c, int i) = t;
+
+			if (s[i] == c) return 'g';
+			if (s.Contains(c)) return 'y';
+			return 'w';
+		}
+
+		void Log()
+		{
+			Console.WriteLine($"RATE: {1 - (double)dist[-1] / dist.Values.Sum()}");
+			Console.WriteLine($"AVG: {(double)dist.Where(kvp => kvp.Key != -1).Sum(kvp => kvp.Key * kvp.Value) / dist.Where(kvp => kvp.Key != -1).Select(kvp => kvp.Value).Sum()}");
+
+			foreach (var kvp in dist)
+			{
+				Console.WriteLine($"{kvp.Key} => {kvp.Value}");
+			}
 		}
 	}
 
-	return true;
+	public static (Dictionary<string, int>, Dictionary<char, int>) GetValues(IEnumerable<string> words)
+	{
+		Dictionary<string, int> values = words.ToDictionary(x => x, y => 0);
+
+		Dictionary<char, int> frequencies = new();
+		foreach (string word in words) // get letter frequencies
+		{
+			foreach (char c in word)
+			{
+				char lower = char.ToLowerInvariant(c);
+
+				if (frequencies.ContainsKey(lower)) frequencies[lower]++;
+				else frequencies.Add(lower, 1);
+			}
+		}
+
+		foreach (string word in words) // get word values
+		{
+			foreach (char c in word)
+			{
+				values[word] += frequencies[c];
+			}
+		}
+
+		return (values, frequencies);
+	}
 }
 
 enum Option
 {
-	Letters, Words, Unique, Play
+	Letters, Words, Unique, Play, TwentyFive, Test
+}
+
+class Player
+{
+	HashSet<string> set;
+	IEnumerable<string> sorted;
+	int r;
+	string word;
+	Dictionary<string, int> values;
+
+	public Player(string[] words)
+	{
+		(values, _) = Global.GetValues(words);
+		var sortedWords = (from kvp in values orderby kvp.Value select kvp.Key).ToArray();
+
+		set = new(sortedWords);
+	}
+
+	public virtual string Guess()
+	{
+		if (r++ == 0) word = "arose";
+		else
+		{
+			try
+			{
+				word = sorted.First(x => Global.Unique(x));
+			}
+			catch
+			{
+				word = null;
+			}
+
+			word ??= sorted.First();
+		}
+
+		return word;
+	}
+
+	public virtual void Response(string s)
+	{
+		Global.RestrictSet(set, s, word);
+		(values, _) = Global.GetValues(set.ToArray());
+		sorted = from x in set orderby values[x] descending select x;
+	}
+
+	public virtual void Clear(string[] words)
+	{
+		set = new(words);
+		r = 0;
+		word = null;
+	}
 }
