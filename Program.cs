@@ -2,10 +2,11 @@
 using InputHandler;
 using WordleHelper.Classes;
 
-var words = File.ReadAllLines("words.txt");
+var validWords = File.ReadAllLines("words.txt");
+var testWords = File.ReadAllLines("original_wordle_word_list.txt");
 
-var player = new WordlePlayer(words, 6);
-var (heuristicValuesByWord, letterFrequencies) = player.GetHeuristicValuesForWords(words);
+var player = new WordlePlayer(validWords, 6);
+var (heuristicValuesByWord, letterFrequencies) = player.GetHeuristicValuesForWords(validWords);
 
 var lettersSortedByFrequency = letterFrequencies
 	.Select(kvp => (letter: kvp.Key, frequency: kvp.Value))
@@ -111,10 +112,10 @@ void PlayWordle()
 		}
 	}
 
-	player.Reset(words);
+	player.Reset(validWords);
 }
 
-void TestWordlePlayer() => new WordlePlayerEvaluator().EvaluateWordlePlayer(new WordlePlayer(words, 6), words, 100);
+void TestWordlePlayer() => new WordlePlayerEvaluator().EvaluateWordlePlayer(new WordlePlayer(validWords, 6), testWords, 100);
 
 enum Option
 {
